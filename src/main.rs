@@ -4,6 +4,55 @@ extern crate tendril;
 use select::document::Document;
 use select::predicate::{Predicate, Attr, Class, Name};
 
+struct Lesson {
+    name: String,
+    class: String,
+    group: String,
+    teacher: String
+}
+
+impl Lesson {
+    fn as_string(&self) -> String{
+        self.name.clone()
+    }
+}
+
+struct Hour {
+    lessons: Vec<Lesson>
+}
+
+impl Hour {
+    fn as_string(&self) -> String{
+        let mut ret = String::from("");
+        if self.lessons.is_empty() {
+            return ret;
+        };
+
+        ret.push('|');
+        for lesson in self.lessons {
+            ret.push_str(&lesson.as_string().clone());
+        };
+        ret
+
+    }
+}
+
+struct Day {
+    hours: Vec<Hour>
+}
+fn strip_end(day: &mut Day){
+    if day.hours.len() == 0 {return {}}
+    let mut index = day.hours.len()-1;
+    while day.hours[index].lessons.is_empty(){
+        day.hours.pop();
+        if index == 0{
+            break;
+        } else {
+            index -= 1;
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     let day_index_str = std::env::args().nth(1);
@@ -35,23 +84,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     let document = Document::from(tendril::Tendril::from(resp));
 
-    let mut day_counter = 0;
 
-    for day in document.find(Class("bk-cell-wrapper")){
-        day_counter += 1;
-        if day_i != -1 && day_i != day_counter {continue;}
+    for day_data in document.find(Class("bk-cell-wrapper")){
+        let mut day = Day {
+            hours: Vec::<Hour>::new()
+        };
+
+        for hour_data in day_data.find(Class("bk-timetable-cell")){
+            let mut hour_struct = Hour{
+                lessons: Vec::<Lesson>::new(),
+            };
+
+            for lesson in hour_data.find(Class("middle")){
+                hour_struct.lessons.push(Lesson {
+                    name: lesson.text(),
+                    group: String::from(""),
+                    teacher: String::from(""),
+                    class: String::from("")
+                });
+            day.hours.push(hour_struct);
+            }
 
         
-
-        let mut counter = 0;
-        for hour in day.find(Class("bk-timetable-cell")){
-            print!("{}|", counter);
-            counter += 1;
-            for lesson in hour.find(Class("middle")){
-                print!("{}", lesson.text());
-                print!("|");
-            }
-            println!();
+        strip_end(&mut day);
         }
         println!("-------------------------------------------------");
     }

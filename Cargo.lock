@@ -910,16 +910,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "scrape"
-version = "0.1.0"
-dependencies = [
- "ferris-says",
- "reqwest",
- "select",
- "tendril",
-]
-
-[[package]]
 name = "security-framework"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1108,6 +1098,16 @@ dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "timetable-cli"
+version = "0.1.0"
+dependencies = [
+ "ferris-says",
+ "reqwest",
+ "select",
+ "tendril",
 ]
 
 [[package]]

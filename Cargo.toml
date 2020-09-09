@@ -1,5 +1,5 @@
 [package]
-name = "scrape"
+name = "timetable-cli"
 version = "0.1.0"
 authors = ["bastioner <jsembasta@gmail.com>"]
 edition = "2018"
