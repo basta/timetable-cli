@@ -12,18 +12,27 @@ struct Lesson {
     name: String,
     classroom: String,
     group: String,
-    teacher: String
+    teacher: String,
+    is_changed: bool
 }
 
 impl Lesson {
     fn as_string(&self, importance: usize) -> String{
-        if importance <= 0{
-            format!("{}{}{}", color::Fg(color::Blue),self.name, color::Fg(color::Reset))
-        } else if importance == 1{
-            format!("{}{}-{}{}", color::Fg(color::LightYellow), self.name, self.classroom, color::Fg(color::Reset))
-        } else {
-            format!("{}-{}-{}-{}", self.name, self.classroom, self.group, self.teacher)
+        let mut ret = String::from("");
+        if self.is_changed{
+            ret.push_str(&format!("{}", color::Bg(color::Red)));
         }
+        if importance <= 0{
+            ret.push_str(&format!("{}{}{}", color::Fg(color::Blue),self.name, color::Fg(color::Reset)))
+        } else if importance == 1{
+            ret.push_str(&format!("{}{}-{}{}", color::Fg(color::LightYellow), self.name, self.classroom, color::Fg(color::Reset)))
+        } else {
+            ret.push_str(&format!("{}-{}-{}-{}", self.name, self.classroom, self.group, self.teacher))
+        }
+        if self.is_changed{
+            ret.push_str(&format!("{}", color::Bg(color::Reset)));
+        }
+        ret
     }
 
     fn as_string_for(&self, groups: &Vec<String>) -> String{
@@ -140,8 +149,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     let document = Document::from(tendril::Tendril::from(resp));
 
-
+    let mut day_counter = 0;
     for day_data in document.find(Class("bk-cell-wrapper")){
+        day_counter += 1;
+        if day_counter != day_i && day_i > -1{
+            continue;
+        }
+
         let mut day = Day {
             hours: Vec::<Hour>::new()
         };
@@ -172,6 +186,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                     teacher: match lesson_data.find(Class("bottom").descendant(Name("span"))).last() {
                         Some(s) => String::from(s.text()),
                         None => String::from("NKD")
+                    },
+                    is_changed: match lesson_data.parent() {
+                        Some(n) => match n.attr("class") {
+                            Some(s) => {s.contains("pink")},
+                            None => false
+                        },
+                        None => false
                     }
                 });
             }
