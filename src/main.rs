@@ -2,18 +2,20 @@ extern crate select;
 extern crate reqwest;
 extern crate tendril;
 extern crate termion;
+extern crate chrono;
 
 use termion::{color, style};
 use select::document::Document;
 use select::predicate::{Predicate, Class, Name};
-
+use chrono::{Local, Datelike};
 
 struct Lesson {
     name: String,
     classroom: String,
     group: String,
     teacher: String,
-    is_changed: bool
+    is_changed: bool,
+    order: u8
 }
 
 impl Lesson {
@@ -32,6 +34,7 @@ impl Lesson {
         if self.is_changed{
             ret.push_str(&format!("{}", color::Bg(color::Reset)));
         }
+
         ret
     }
 
@@ -45,7 +48,8 @@ impl Lesson {
 }
 
 struct Hour {
-    lessons: Vec<Lesson>
+    lessons: Vec<Lesson>,
+    order: u8
 }
 
 impl Hour {
@@ -118,9 +122,12 @@ fn strip_end(day: &mut Day){
 }
 fn main() -> Result<(), Box<dyn std::error::Error>>{
     //* set groups here
-    let groups = vec![String::from("all"), String::from("m1"), String::from("dInf"), String::from("tvL1"), String::from("aj12"), String::from("fj2")];
+    let groups = vec![String::from("all"), String::from("m1"), String::from("dInf"), String::from("tvL1"), String::from("aj12"), String::from("fj2"), String::from("1FyT"), String::from("2FyL")];
 
-    let day_index_str = std::env::args().nth(1);
+    //Reading arguments
+
+    //Day index
+    let day_index_str = std::env::args().last();
     // let hour_index = std::env::args().nth(1);
 
     //Does it exist?
@@ -133,15 +140,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         day_index = String::from("-1");
     }
     
-
-    //Can it be parsed?
-    let mut day_i;
-    if let Ok(n) = day_index.parse::<i32>() {
-        day_i = n;
-    }
-    else {
-        day_i = -1;
-    }
+        //Can it be parsed?
+        let mut day_i;
+        if let Ok(n) = day_index.parse::<i32>() {
+            day_i = n;
+        }
+        else {
+            day_i = -1;
+        }
+    
+    //Options
+    for arg in std::env::args(){
+        if arg.to_lowercase() == "-t" {
+            let dt = Local::now();
+            day_i = dt.weekday().number_from_monday() as i32;
+        } else if arg.to_lowercase() == "-n"{
+                let dt = Local::now();
+                day_i = dt.weekday().number_from_monday() as i32 + 1;
+                if day_i > 5 {
+                    day_i = 1;
+                }
+            }
+        }
 
     if day_i > 5 {day_i = 5;}
 
@@ -159,10 +179,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         let mut day = Day {
             hours: Vec::<Hour>::new()
         };
-
+        let mut order_counter: u8 = 0;
         for hour_data in day_data.find(Class("bk-timetable-cell")){
+            order_counter += 1;
+
             let mut hour_struct = Hour{
                 lessons: Vec::<Lesson>::new(),
+                order: order_counter
             };
             
             for lesson_data in hour_data.find(Class("day-flex")){
@@ -193,7 +216,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                             None => false
                         },
                         None => false
-                    }
+                    },
+                    order: order_counter
                 });
             }
 
