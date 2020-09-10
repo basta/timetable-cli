@@ -1,5 +1,5 @@
 [package]
-name = "scrape"
+name = "timetable-cli"
 version = "0.1.0"
 authors = ["bastioner <jsembasta@gmail.com>"]
 edition = "2018"
@@ -11,3 +11,5 @@ ferris-says = "0.1.1"
 select = "0.5.0"
 reqwest = { version = "0.10.8", features=["blocking"]}
 tendril = "0.4.1" 
+termion = "*"
+
