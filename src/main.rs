@@ -21,15 +21,20 @@ struct Lesson {
 impl Lesson {
     fn as_string(&self, importance: usize) -> String{
         let mut ret = String::from("");
+        let mut importance = importance;
         if self.is_changed{
             ret.push_str(&format!("{}", color::Bg(color::Red)));
+            if importance == 1 {
+                importance = 2;
+                ret.push_str(&format!("{}", color::Fg(color::LightYellow)));
+            }
         }
         if importance <= 0{
             ret.push_str(&format!("{}{}{}", color::Fg(color::Blue),self.name, color::Fg(color::Reset)))
         } else if importance == 1{
             ret.push_str(&format!("{}{}-{}{}", color::Fg(color::LightYellow), self.name, self.classroom, color::Fg(color::Reset)))
         } else {
-            ret.push_str(&format!("{}-{}-{}-{}", self.name, self.classroom, self.group, self.teacher))
+            ret.push_str(&format!("{}-{}-{}", self.name, self.classroom, self.teacher))
         }
         if self.is_changed{
             ret.push_str(&format!("{}", color::Bg(color::Reset)));
@@ -69,7 +74,8 @@ impl Hour {
     }
 
     fn as_string_for(&self, groups: &Vec<String>) -> String{
-        let mut ret = String::from("");
+        let mut ret = String::from(self.order.to_string());
+        ret.push('.');
         if self.lessons.is_empty() {
             return ret;
         };
