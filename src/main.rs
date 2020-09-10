@@ -1,19 +1,37 @@
 extern crate select;
 extern crate reqwest;
 extern crate tendril;
+extern crate termion;
+
+use termion::{color, style};
 use select::document::Document;
-use select::predicate::{Predicate, Attr, Class, Name};
+use select::predicate::{Predicate, Class, Name};
+
 
 struct Lesson {
     name: String,
-    class: String,
+    classroom: String,
     group: String,
     teacher: String
 }
 
 impl Lesson {
-    fn as_string(&self) -> String{
-        format!("{}-{}-{}-{}", self.name, self.class, self.group, self.teacher)
+    fn as_string(&self, importance: usize) -> String{
+        if importance <= 0{
+            format!("{}{}{}", color::Fg(color::Blue),self.name, color::Fg(color::Reset))
+        } else if importance == 1{
+            format!("{}{}-{}{}", color::Fg(color::LightYellow), self.name, self.classroom, color::Fg(color::Reset))
+        } else {
+            format!("{}-{}-{}-{}", self.name, self.classroom, self.group, self.teacher)
+        }
+    }
+
+    fn as_string_for(&self, groups: &Vec<String>) -> String{
+        if groups.contains(&self.group){
+            self.as_string(1)
+        } else {
+            self.as_string(0)
+        }
     }
 }
 
@@ -30,11 +48,25 @@ impl Hour {
 
         ret.push('|');
         for lesson in &self.lessons {
-            ret.push_str(&lesson.as_string().clone());
+            ret.push_str(&lesson.as_string(1).clone());
             ret.push('|');
         };
         ret
 
+    }
+
+    fn as_string_for(&self, groups: &Vec<String>) -> String{
+        let mut ret = String::from("");
+        if self.lessons.is_empty() {
+            return ret;
+        };
+
+        ret.push('|');
+        for lesson in &self.lessons {
+            ret.push_str(&lesson.as_string_for(groups).clone());
+            ret.push('|');
+        };
+        ret
     }
 }
 
@@ -48,6 +80,15 @@ impl Day {
         let mut ret = String::from("");
         for hour in &self.hours{
             ret.push_str(&hour.as_string());
+            ret.push('\n');
+        }
+        ret
+    }
+
+    fn as_string_for(&self, groups: &Vec<String>) -> String{
+        let mut ret = String::from("");
+        for hour in &self.hours{
+            ret.push_str(&hour.as_string_for(groups));
             ret.push('\n');
         }
         ret
@@ -66,13 +107,15 @@ fn strip_end(day: &mut Day){
         }
     }
 }
-    fn main() -> Result<(), Box<dyn std::error::Error>>{
+fn main() -> Result<(), Box<dyn std::error::Error>>{
+    //* set groups here
+    let groups = vec![String::from("all"), String::from("m1"), String::from("dInf"), String::from("tvL1"), String::from("aj12"), String::from("fj2")];
 
     let day_index_str = std::env::args().nth(1);
     // let hour_index = std::env::args().nth(1);
 
     //Does it exist?
-    let mut day_index: String;
+    let day_index: String;
     if let Some(n) = day_index_str {
         day_index = n;
         
@@ -108,21 +151,25 @@ fn strip_end(day: &mut Day){
                 lessons: Vec::<Lesson>::new(),
             };
             
-            for lesson_data in hour_data.find(Class("day-item")){
+            for lesson_data in hour_data.find(Class("day-flex")){
                 hour_struct.lessons.push(Lesson {
                     name: match lesson_data.find(Class("middle")).last() {
                         Some(s) => s.text(),
                         None => String::from("N/A")
                     },
                     group: match lesson_data.find(Class("left")).last() {
-                        Some(s) => String::from(s.text()),
+                        Some(s) => {if String::from(s.text().trim()) == "" {
+                            String::from("all")
+                        } else {
+                            String::from(s.text().trim())
+                        }},
                         None => String::from("all")
                     },
-                    class: match lesson_data.find(Class("first")).last() {
+                    classroom: match lesson_data.find(Class("first")).last() {
                         Some(s) => String::from(s.text()),
                         None => String::from("000")
                     },
-                    teacher: match lesson_data.find(Class("bottom").descendant(Name("a"))).last() {
+                    teacher: match lesson_data.find(Class("bottom").descendant(Name("span"))).last() {
                         Some(s) => String::from(s.text()),
                         None => String::from("NKD")
                     }
@@ -134,7 +181,7 @@ fn strip_end(day: &mut Day){
         
         }
         strip_end(&mut day);
-        print!("{}", day.as_string());
+        print!("{}", day.as_string_for(&groups));
         println!("-------------------------------------------------");
     }
     Ok(())
