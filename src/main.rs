@@ -13,7 +13,7 @@ struct Lesson {
 
 impl Lesson {
     fn as_string(&self) -> String{
-        self.name.clone()
+        format!("{}-{}-{}-{}", self.name, self.class, self.group, self.teacher)
     }
 }
 
@@ -29,8 +29,9 @@ impl Hour {
         };
 
         ret.push('|');
-        for lesson in self.lessons {
+        for lesson in &self.lessons {
             ret.push_str(&lesson.as_string().clone());
+            ret.push('|');
         };
         ret
 
@@ -39,7 +40,20 @@ impl Hour {
 
 struct Day {
     hours: Vec<Hour>
+    
 }
+
+impl Day {
+    fn as_string(&self) -> String{
+        let mut ret = String::from("");
+        for hour in &self.hours{
+            ret.push_str(&hour.as_string());
+            ret.push('\n');
+        }
+        ret
+    }
+}
+
 fn strip_end(day: &mut Day){
     if day.hours.len() == 0 {return {}}
     let mut index = day.hours.len()-1;
@@ -52,8 +66,7 @@ fn strip_end(day: &mut Day){
         }
     }
 }
-
-fn main() -> Result<(), Box<dyn std::error::Error>>{
+    fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     let day_index_str = std::env::args().nth(1);
     // let hour_index = std::env::args().nth(1);
@@ -94,20 +107,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
             let mut hour_struct = Hour{
                 lessons: Vec::<Lesson>::new(),
             };
-
-            for lesson in hour_data.find(Class("middle")){
+            
+            for lesson_data in hour_data.find(Class("day-item")){
                 hour_struct.lessons.push(Lesson {
-                    name: lesson.text(),
-                    group: String::from(""),
-                    teacher: String::from(""),
-                    class: String::from("")
+                    name: match lesson_data.find(Class("middle")).last() {
+                        Some(s) => s.text(),
+                        None => String::from("N/A")
+                    },
+                    group: match lesson_data.find(Class("left")).last() {
+                        Some(s) => String::from(s.text()),
+                        None => String::from("all")
+                    },
+                    class: match lesson_data.find(Class("first")).last() {
+                        Some(s) => String::from(s.text()),
+                        None => String::from("000")
+                    },
+                    teacher: match lesson_data.find(Class("bottom").descendant(Name("a"))).last() {
+                        Some(s) => String::from(s.text()),
+                        None => String::from("NKD")
+                    }
                 });
-            day.hours.push(hour_struct);
             }
 
+            day.hours.push(hour_struct);
+
         
-        strip_end(&mut day);
         }
+        strip_end(&mut day);
+        print!("{}", day.as_string());
         println!("-------------------------------------------------");
     }
     Ok(())
