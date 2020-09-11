@@ -19,20 +19,23 @@ struct Lesson {
 }
 
 impl Lesson {
-    fn as_string(&self, importance: usize) -> String{
+    fn as_string(&self, importance: usize, is_in_groups: bool) -> String{
         let mut ret = String::from("");
-        let mut importance = importance;
+
         if self.is_changed{
             ret.push_str(&format!("{}", color::Bg(color::Red)));
-            if importance == 1 {
-                importance = 2;
-                ret.push_str(&format!("{}", color::Fg(color::LightYellow)));
             }
+        
+        if is_in_groups {
+            ret.push_str(&format!("{}", color::Fg(color::LightYellow)))
+        } else {
+            ret.push_str(&format!("{}", color::Fg(color::LightBlue)))
         }
+
         if importance <= 0{
-            ret.push_str(&format!("{}{}{}", color::Fg(color::Blue),self.name, color::Fg(color::Reset)))
+            ret.push_str(&format!("{}",self.name))
         } else if importance == 1{
-            ret.push_str(&format!("{}{}-{}{}", color::Fg(color::LightYellow), self.name, self.classroom, color::Fg(color::Reset)))
+            ret.push_str(&format!("{}-{}", self.name, self.classroom))
         } else {
             ret.push_str(&format!("{}-{}-{}", self.name, self.classroom, self.teacher))
         }
@@ -40,16 +43,22 @@ impl Lesson {
             ret.push_str(&format!("{}", color::Bg(color::Reset)));
         }
 
+        ret.push_str(&format!("{}{}", color::Bg(color::Reset), color::Fg(color::Reset)));
         ret
     }
 
     fn as_string_for(&self, groups: &Vec<String>, verbose: bool) -> String{
         if verbose {
-            self.as_string(2)
+            if groups.contains(&self.group){
+                self.as_string(2, true)
+            }
+            else {
+                self.as_string(2, false)
+            }
         } else if groups.contains(&self.group){
-            self.as_string(1)
+            self.as_string(1, true)
         } else {
-            self.as_string(0)
+            self.as_string(0, false)
         }
     }
 }
@@ -69,7 +78,7 @@ impl Hour {
         
         ret.push('|');
         for lesson in &self.lessons {
-            ret.push_str(&lesson.as_string(1).clone());
+            ret.push_str(&lesson.as_string(1, false).clone());
             ret.push('|');
         };
         ret
@@ -84,7 +93,7 @@ impl Hour {
         ret.push_str("  ");
         ret.push_str(&self.order.to_string());
         
-        ret.push('.');
+        ret.push_str(". ");
         if self.lessons.is_empty() {
             return ret;
         };
