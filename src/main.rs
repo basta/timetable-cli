@@ -238,13 +238,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             for lesson_data in hour_data.find(Class("day-flex")) {
                 hour_struct.lessons.push(Lesson {
-                    name: lesson_data.find(Class("middle")).last().map(|s| s.text()).unwrap_or(String::from("N/A")),
-                    group: lesson_data.find(Class("left")).last().map(|s| s.text().trim().to_string()).filter(|t| t != "").unwrap_or(String::from("all")),
-                    classroom: lesson_data.find(Class("first")).last().map(|s| s.text()).unwrap_or(String::from("000")),
+                    name: lesson_data
+                        .find(Class("middle"))
+                        .last()
+                        .map(|s| s.text())
+                        .unwrap_or(String::from("N/A")),
+                    group: lesson_data
+                        .find(Class("left"))
+                        .last()
+                        .map(|s| s.text().trim().to_string())
+                        .filter(|t| t != "")
+                        .unwrap_or(String::from("all")),
+                    classroom: lesson_data
+                        .find(Class("first"))
+                        .last()
+                        .map(|s| s.text())
+                        .unwrap_or(String::from("000")),
                     teacher: lesson_data
                         .find(Class("bottom").descendant(Name("span")))
-                        .last().map(|s| s.text()).unwrap_or(String::from("NKD")),
-                    is_changed: lesson_data.parent().and_then(|n| n.attr("class")).map(|s| s.contains("pink")).unwrap_or(false),
+                        .last()
+                        .map(|s| s.text())
+                        .unwrap_or(String::from("NKD")),
+                    is_changed: lesson_data
+                        .parent()
+                        .and_then(|n| n.attr("class"))
+                        .map(|s| s.contains("pink"))
+                        .unwrap_or(false),
                     order: order_counter,
                 });
             }
