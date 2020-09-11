@@ -43,8 +43,10 @@ impl Lesson {
         ret
     }
 
-    fn as_string_for(&self, groups: &Vec<String>) -> String{
-        if groups.contains(&self.group){
+    fn as_string_for(&self, groups: &Vec<String>, verbose: bool) -> String{
+        if verbose {
+            self.as_string(2)
+        } else if groups.contains(&self.group){
             self.as_string(1)
         } else {
             self.as_string(0)
@@ -60,10 +62,11 @@ struct Hour {
 impl Hour {
     fn as_string(&self) -> String{
         let mut ret = String::from("");
+        
         if self.lessons.is_empty() {
             return ret;
         };
-
+        
         ret.push('|');
         for lesson in &self.lessons {
             ret.push_str(&lesson.as_string(1).clone());
@@ -73,8 +76,14 @@ impl Hour {
 
     }
 
-    fn as_string_for(&self, groups: &Vec<String>) -> String{
-        let mut ret = String::from(self.order.to_string());
+    fn as_string_for(&self, groups: &Vec<String>, verbose: bool) -> String{
+        let mut ret = String::from("");
+        if verbose{
+            ret.push_str(&get_timerange(self.order));
+        }
+        ret.push_str("  ");
+        ret.push_str(&self.order.to_string());
+        
         ret.push('.');
         if self.lessons.is_empty() {
             return ret;
@@ -82,7 +91,7 @@ impl Hour {
 
         ret.push('|');
         for lesson in &self.lessons {
-            ret.push_str(&lesson.as_string_for(groups).clone());
+            ret.push_str(&lesson.as_string_for(groups, verbose).clone());
             ret.push('|');
         };
         ret
@@ -104,13 +113,29 @@ impl Day {
         ret
     }
 
-    fn as_string_for(&self, groups: &Vec<String>) -> String{
+    fn as_string_for(&self, groups: &Vec<String>, verbose: bool) -> String{
         let mut ret = String::from("");
         for hour in &self.hours{
-            ret.push_str(&hour.as_string_for(groups));
+            ret.push_str(&hour.as_string_for(groups, verbose));
             ret.push('\n');
         }
         ret
+    }
+}
+
+fn get_timerange(order: u8) -> String{
+    match order {
+        1 => String::from("8:00-8:45  "),
+        2 => String::from("8:50-9:35  "),
+        3 => String::from("9:55-10:40 "),
+        4 => String::from("10:45-11:30"),
+        5 => String::from("11:40-12:25"),
+        6 => String::from("12:30-13:15"),
+        7 => String::from("13:05-13:50"),
+        8 => String::from("13:55-14:40"),
+        9 => String::from("14:50-15:35"),
+        10 => String::from("15:40-16:25"),
+        _ => String::from("Co to je???")
     }
 }
 
@@ -131,7 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let groups = vec![String::from("all"), String::from("m1"), String::from("dInf"), String::from("tvL1"), String::from("aj12"), String::from("fj2"), String::from("1FyT"), String::from("2FyL")];
 
     //Reading arguments
-
+    let mut verbose = false;
     //Day index
     let day_index_str = std::env::args().last();
     // let hour_index = std::env::args().nth(1);
@@ -166,7 +191,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                 if day_i > 5 {
                     day_i = 1;
                 }
-            }
+        } else if arg.to_lowercase() == "-v"{
+            verbose = true;
+        }
         }
 
     if day_i > 5 {day_i = 5;}
@@ -232,7 +259,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         
         }
         strip_end(&mut day);
-        print!("{}", day.as_string_for(&groups));
+        print!("{}", day.as_string_for(&groups, verbose));
         println!("-------------------------------------------------");
     }
     Ok(())
