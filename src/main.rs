@@ -186,20 +186,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let hour_index = std::env::args().nth(1);
 
     //Does it exist?
-    let day_index: String;
-    if let Some(n) = day_index_str {
-        day_index = n;
-    } else {
-        day_index = String::from("-1");
-    }
+    let day_index = day_index_str.unwrap_or(String::from("-1"));
 
     //Can it be parsed?
-    let mut day_i;
-    if let Ok(n) = day_index.parse::<i32>() {
-        day_i = n;
-    } else {
-        day_i = -1;
-    }
+    let mut day_i = day_index.parse::<i32>().unwrap_or(-1);
 
     //Options
     for arg in std::env::args() {
@@ -248,38 +238,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             for lesson_data in hour_data.find(Class("day-flex")) {
                 hour_struct.lessons.push(Lesson {
-                    name: match lesson_data.find(Class("middle")).last() {
-                        Some(s) => s.text(),
-                        None => String::from("N/A"),
-                    },
-                    group: match lesson_data.find(Class("left")).last() {
-                        Some(s) => {
-                            if String::from(s.text().trim()) == "" {
-                                String::from("all")
-                            } else {
-                                String::from(s.text().trim())
-                            }
-                        }
-                        None => String::from("all"),
-                    },
-                    classroom: match lesson_data.find(Class("first")).last() {
-                        Some(s) => String::from(s.text()),
-                        None => String::from("000"),
-                    },
-                    teacher: match lesson_data
+                    name: lesson_data.find(Class("middle")).last().map(|s| s.text()).unwrap_or(String::from("N/A")),
+                    group: lesson_data.find(Class("left")).last().map(|s| s.text().trim().to_string()).filter(|t| t != "").unwrap_or(String::from("all")),
+                    classroom: lesson_data.find(Class("first")).last().map(|s| s.text()).unwrap_or(String::from("000")),
+                    teacher: lesson_data
                         .find(Class("bottom").descendant(Name("span")))
-                        .last()
-                    {
-                        Some(s) => String::from(s.text()),
-                        None => String::from("NKD"),
-                    },
-                    is_changed: match lesson_data.parent() {
-                        Some(n) => match n.attr("class") {
-                            Some(s) => s.contains("pink"),
-                            None => false,
-                        },
-                        None => false,
-                    },
+                        .last().map(|s| s.text()).unwrap_or(String::from("NKD")),
+                    is_changed: lesson_data.parent().and_then(|n| n.attr("class")).map(|s| s.contains("pink")).unwrap_or(false),
                     order: order_counter,
                 });
             }
