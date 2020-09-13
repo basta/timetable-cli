@@ -4,7 +4,7 @@ extern crate select;
 extern crate tendril;
 extern crate termion;
 
-use chrono::{Datelike, Local};
+use chrono::{prelude::*};
 use select::document::Document;
 use select::predicate::{Class, Name, Predicate};
 use termion::{color, style};
@@ -66,6 +66,18 @@ impl Lesson {
         } else {
             self.as_string(0, false)
         }
+    }
+
+    fn as_pretty_string(&self) -> String{
+        let mut ret = String::new();
+        ret.push_str("Hodina: ");
+        ret.push_str(&self.name);
+        ret.push_str("\n");
+        ret.push_str("Místnost: ");
+        ret.push_str(&self.classroom);
+        ret.push_str("   Učitel: ");
+        ret.push_str(&self.teacher);
+        ret 
     }
 }
 
@@ -152,6 +164,33 @@ fn get_timerange(order: u8) -> String {
     }
 }
 
+fn get_number_of_current_lesson() -> i32{
+    let local: DateTime<Local> = Local::now();
+    let hour = local.hour();
+    let minute = local.minute();
+    if hour == 8 && minute < 45{
+        1
+    } else if (hour == 8 && minute >= 45) || (hour == 9 && minute < 35){
+        2
+    } else if (hour == 9 && minute >= 35) || (hour == 10 && minute < 40){
+        3
+    } else if (hour == 10 && minute >= 40) || (hour == 11 && minute < 30){
+        4
+    } else if (hour == 11 && minute >= 30) || (hour == 12 && minute < 25){
+        5
+    } else if (hour == 12 && minute >= 25) || (hour == 13 && minute < 5){
+        6 
+    } else if hour == 13 && minute < 50{
+        7
+    } else if (hour == 13 && minute >= 50) || (hour == 14 && minute < 40){
+        8
+    } else if (hour == 14 && minute >= 40) || (hour == 15 && minute < 35){
+        9
+    } else {
+        10
+    }
+}
+
 fn strip_end(day: &mut Day) {
     if day.hours.len() == 0 {
         return {};
@@ -181,6 +220,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     //Reading arguments
     let mut verbose = false;
+    let mut pretty= false;
+    let mut this_lesson = false;
+    let mut next_lesson = false;
     //Day index
     let day_index_str = std::env::args().last();
     // let hour_index = std::env::args().nth(1);
@@ -204,6 +246,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         } else if arg.to_lowercase() == "-v" {
             verbose = true;
+        } else if arg.to_lowercase() == "-tl" {
+            pretty = true;
+            this_lesson = true;
+            let dt = Local::now();
+            day_i = dt.weekday().number_from_monday() as i32;
+            // !FOR DEBUG
+            day_i = 1
+        
+        } else if arg.to_lowercase() == "-nl" {
+            pretty = true;
+            next_lesson = true;
         }
     }
 
@@ -271,8 +324,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             day.hours.push(hour_struct);
         }
         strip_end(&mut day);
-        print!("{}", day.as_string_for(&groups, verbose));
-        println!("-------------------------------------------------");
+        if pretty {
+            if this_lesson {
+                println!("{}", day.hours[get_number_of_current_lesson() as usize -1].lessons[0].as_pretty_string());
+            }
+        } else {
+            print!("{}", day.as_string_for(&groups, verbose));
+            println!("-------------------------------------------------");
+        }
     }
     Ok(())
 }
